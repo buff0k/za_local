@@ -10,7 +10,6 @@ PACKAGE_ROOT = APP_ROOT / "za_local"
 # Files whose string literals point at shipped assets.
 ASSET_REFERENCING_SOURCES = (
 	PACKAGE_ROOT / "hooks.py",
-	PACKAGE_ROOT / "utils" / "hooks_utils.py",
 )
 
 # "public/js/foo.js" as used by doctype_js, and "/assets/za_local/js/foo.js"
@@ -27,21 +26,10 @@ class TestRepositoryHygiene(unittest.TestCase):
 				offenders.append(path.relative_to(PACKAGE_ROOT).as_posix())
 		self.assertFalse(offenders, msg=f"Synchronous XHR found in: {offenders}")
 
-	def test_payroll_dialog_uses_dom_text_for_employee_values(self):
-		text = (PACKAGE_ROOT / "public" / "js" / "payroll_entry.js").read_text()
-		self.assertNotIn("${row.employee_name}", text)
-		self.assertIn('.text(`${row.employee}: ${row.employee_name || ""}`)', text)
-		self.assertIn('encodeURIComponent(row.employee)', text)
-
-	def test_flexible_benefit_hiding_never_targets_shared_form_sections(self):
-		css = (PACKAGE_ROOT / "public" / "css" / "za_local.css").read_text()
-		javascript = (PACKAGE_ROOT / "public" / "js" / "salary_structure.js").read_text()
-		css_rules = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-
-		self.assertNotRegex(css_rules, r"\.form-section[^\{]*max_benefits")
-		self.assertNotIn("za-hidden-flexible-benefits", css + javascript)
-		self.assertNotIn("closest('.form-section')", javascript)
-		self.assertIn("frm.toggle_display(fieldname, false)", javascript)
+	# test_payroll_dialog_uses_dom_text_for_employee_values and
+	# test_flexible_benefit_hiding_never_targets_shared_form_sections moved to
+	# ir/ir/tests/test_repo_hygiene.py - the JS files they check moved to ir
+	# as part of absorbing za_local into ir.
 
 	def test_no_active_duplicate_print_format_jsons(self):
 		seen = {}
@@ -119,23 +107,9 @@ class TestRepositoryHygiene(unittest.TestCase):
 				with path.open() as handle:
 					json.load(handle)
 
-	def test_practitioner_guide_manifest_matches_content(self):
-		from za_local.practitioner_guide.manifest import GUIDES
-
-		content_dir = PACKAGE_ROOT / "practitioner_guide" / "content"
-		pages = [
-			(guide["space"]["route"], group["key"], page)
-			for guide in GUIDES
-			for group in guide["groups"]
-			for page in group["pages"]
-		]
-		files = [page["file"] for _, _, page in pages]
-		routes = [f"{space}/{group}/{page['slug']}" for space, group, page in pages]
-		content_files = sorted(path.name for path in content_dir.glob("*.md"))
-
-		self.assertEqual(len(files), len(set(files)), "Guide content files must be referenced once")
-		self.assertEqual(len(routes), len(set(routes)), "Guide routes must be unique")
-		self.assertEqual(sorted(files), content_files, "Manifest and guide content files must match")
+	# test_practitioner_guide_manifest_matches_content moved to
+	# ir/ir/tests/test_repo_hygiene.py - practitioner_guide moved to ir as
+	# part of absorbing za_local into ir.
 
 	def test_expected_sa_workspace_sidebars_exist(self):
 		expected = {
@@ -179,23 +153,10 @@ class TestRepositoryHygiene(unittest.TestCase):
 				msg=f"{filename} should not be grouped under SA Localisation",
 			)
 
-	def test_expected_sa_module_onboarding_exists(self):
-		expected = {
-			"sa_localisation_onboarding.json",
-			"sa_overview_onboarding.json",
-			"sa_vat_onboarding.json",
-			"sa_payroll_onboarding.json",
-			"sa_labour_onboarding.json",
-			"sa_coida_onboarding.json",
-		}
-		found = {
-			path.name
-			for path in (PACKAGE_ROOT / "sa_setup" / "module_onboarding").rglob("*.json")
-		}
-		self.assertTrue(
-			expected.issubset(found),
-			msg=f"Missing expected module onboarding standard docs: {sorted(expected - found)}",
-		)
+	# test_expected_sa_module_onboarding_exists moved to ir/ir/tests/
+	# test_repo_hygiene.py - sa_setup/module_onboarding/*.json moved to ir
+	# (distributed across ir_setup/ir_vat/ir_payroll/ir_labour/ir_coida) as
+	# part of absorbing za_local into ir.
 
 	def test_module_sidebars_reference_module_onboarding(self):
 		expected = {
@@ -215,38 +176,7 @@ class TestRepositoryHygiene(unittest.TestCase):
 				msg=f"{filename} should attach {onboarding}",
 			)
 
-	def test_sa_print_formats_are_module_scoped(self):
-		expected = {
-			"sa_vat/print_format/sa_sales_invoice/sa_sales_invoice.json": "SA Sales Invoice",
-			"sa_vat/print_format/sa_full_tax_invoice/sa_full_tax_invoice.json": "SA Full Tax Invoice",
-			"sa_vat/print_format/sa_abridged_tax_invoice/sa_abridged_tax_invoice.json": "SA Abridged Tax Invoice",
-			"sa_vat/print_format/sa_sales_order/sa_sales_order.json": "SA Sales Order",
-			"sa_vat/print_format/sa_quotation/sa_quotation.json": "SA Quotation",
-			"sa_vat/print_format/sa_delivery_note/sa_delivery_note.json": "SA Delivery Note",
-			"sa_vat/print_format/sa_purchase_invoice/sa_purchase_invoice.json": "SA Purchase Invoice",
-			"sa_vat/print_format/sa_purchase_order/sa_purchase_order.json": "SA Purchase Order",
-			"sa_vat/print_format/sa_credit_note/sa_credit_note.json": "SA Credit Note",
-			"sa_vat/print_format/sa_debit_note/sa_debit_note.json": "SA Debit Note",
-			"sa_vat/print_format/sa_payment_entry/sa_payment_entry.json": "SA Payment Entry",
-			"sa_payroll/print_format/irp5_employee_certificate/irp5_employee_certificate.json": "IRP5 Employee Certificate",
-			"sa_payroll/print_format/irp5_it3_certificate/irp5_it3_certificate.json": "IRP5-it3 Certificate",
-			"sa_payroll/print_format/sa_salary_slip/sa_salary_slip.json": "SA Salary Slip",
-		}
-
-		for relative_path, name in expected.items():
-			path = PACKAGE_ROOT / relative_path
-			self.assertTrue(path.exists(), msg=f"Missing print format JSON: {relative_path}")
-			with path.open() as handle:
-				data = json.load(handle)
-
-			self.assertEqual(data.get("name"), name)
-			self.assertEqual(data.get("doctype"), "Print Format")
-			self.assertEqual(data.get("print_format_for"), "DocType")
-			self.assertEqual(data.get("print_format_type"), "Jinja")
-			self.assertEqual(data.get("standard"), "Yes")
-			if relative_path.startswith("sa_vat/print_format/"):
-				self.assertIn(
-					"{% include",
-					data.get("html") or "",
-					msg=f"{name} should use the shared, null-safe commercial template",
-				)
+	# test_sa_print_formats_are_module_scoped moved to ir/ir/tests/
+	# test_repo_hygiene.py (as test_sa_print_formats_are_file_scoped) -
+	# sa_vat/sa_payroll moved to ir_vat/ir_payroll as part of absorbing
+	# za_local into ir.
