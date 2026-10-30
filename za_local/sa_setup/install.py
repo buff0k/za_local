@@ -633,13 +633,13 @@ def _after_install():
 	cleanup_invalid_doctype_links()
 	sync_za_local()  # fixtures only - custom fields/property setters are now ir's
 	setup_default_data()
-	seed_statutory_rate_packs()
+	# Company-scoped tax config, rate-pack/travel-rate seeding, VAT account
+	# row migration, and GL account repair all moved to ir's own
+	# after_migrate (ir.ir_setup.install.*, ir.ir_vat.setup.*) - no longer
+	# called from here.
 	if is_hrms_installed():
 		ensure_eti_payroll_settings_defaults()
-		ensure_all_company_tax_configuration()
-	migrate_legacy_vat_account_rows()
 	apply_statutory_formulas()
-	repair_salary_component_accounts()
 	migrate_irp5_legacy_source_fields()
 	cleanup_orphaned_workspace_records()
 	ensure_sa_localisation_module_def()
@@ -678,12 +678,12 @@ def _after_migrate():
 	"""
 	cleanup_invalid_doctype_links()
 	sync_za_local()  # fixtures only - custom fields/property setters are now ir's
+	# Company-scoped tax config, rate-pack/travel-rate seeding, VAT account
+	# row migration, and GL account repair all moved to ir's own
+	# after_migrate (ir.ir_setup.install.*, ir.ir_vat.setup.*) - no longer
+	# called from here.
 	if is_hrms_installed():
 		ensure_eti_payroll_settings_defaults()
-		ensure_all_company_tax_configuration()
-	seed_statutory_rate_packs()
-	repair_salary_component_accounts()
-	migrate_legacy_vat_account_rows()
 	migrate_irp5_legacy_source_fields()
 	cleanup_orphaned_workspace_records()
 	ensure_sa_localisation_module_def()
@@ -3178,44 +3178,42 @@ def run_za_local_setup(setup_doc, progress_user=None):
 	setup_doc.setup_status = "In Progress"
 	setup_doc.save()
 
+	# NOTE: as of the za_local-into-ir absorption, every checkbox below that
+	# used to imperatively create Custom Fields, Property Setters, or
+	# generic (non-company-scoped) reference/master data - VAT custom
+	# fields, VAT vendor types, salary components, earnings components,
+	# SARS payroll codes, salary component classifications, ETI slabs,
+	# business trip regions, SETA list, bargaining councils - no longer
+	# runs any code here. That content is now ir's own fixtures
+	# (ir/ir/fixtures/*.json), applied automatically by bench migrate
+	# regardless of this wizard, per this migration's standing rule that a
+	# setup controller must never create Custom Fields/DocType records
+	# itself. Only the genuinely company-scoped pieces (which can't be a
+	# fixture, since they vary per Company) still run here, now via ir's
+	# ported versions in ir.ir_setup.install.
+	from ir.ir_setup.install import (
+		ensure_company_tax_configuration as _ir_ensure_company_tax_configuration,
+		load_sa_chart_of_accounts as _ir_load_sa_chart_of_accounts,
+		repair_salary_component_accounts as _ir_repair_salary_component_accounts,
+		seed_statutory_rate_packs as _ir_seed_statutory_rate_packs,
+	)
+
 	try:
 		with suppress_known_setup_warnings():
-			data_dir = resolve_app_path("sa_setup", "data")
-
-			_p(5, _("Applying VAT fields, print formats and navigation"))
-			ensure_vat_custom_fields()
+			_p(5, _("Applying print formats and navigation"))
 			migrated = migrate_legacy_vat_account_rows()
 			set_accounts_settings_for_za_vat()
 			ensure_sa_print_formats()
 			sync_sa_navigation()
-			applied.append(_("VAT custom fields, print formats, and navigation"))
+			applied.append(_("Print formats and navigation"))
 			if migrated:
 				applied.append(_("{0} legacy VAT account rows migrated").format(migrated))
-
-			# VAT vendor types (selectable; foundational for VAT settings)
-			if setup_doc.get("load_vat_vendor_types"):
-				_p(12, _("Loading VAT vendor types"))
-				seed_vat_vendor_types()
-				applied.append(get_setup_field_label(setup_doc, "load_vat_vendor_types"))
-
-			# Load salary components
-			if setup_doc.load_salary_components:
-				_p(20, _("Loading statutory salary components"))
-				load_data_from_json(data_dir / "salary_components.json")
-				print("✓ Loaded statutory salary components")
-				applied.append(get_setup_field_label(setup_doc, "load_salary_components"))
-
-			if setup_doc.load_earnings_components:
-				_p(26, _("Loading earnings components"))
-				load_data_from_json(data_dir / "earnings_components.json")
-				print("✓ Loaded earnings components")
-				applied.append(get_setup_field_label(setup_doc, "load_earnings_components"))
 
 			# These records form one interdependent statutory configuration. Create
 			# missing company-scoped records together and preserve existing masters.
 			if setup_doc.load_tax_slabs or setup_doc.load_tax_rebates or setup_doc.load_medical_credits:
 				_p(42, _("Ensuring company payroll tax configuration"))
-				ensure_company_tax_configuration(setup_doc.company)
+				_ir_ensure_company_tax_configuration(setup_doc.company)
 				print("✓ Company payroll tax configuration is complete")
 				if setup_doc.load_tax_slabs:
 					applied.append(get_setup_field_label(setup_doc, "load_tax_slabs"))
@@ -3224,23 +3222,11 @@ def run_za_local_setup(setup_doc, progress_user=None):
 				if setup_doc.load_medical_credits:
 					applied.append(get_setup_field_label(setup_doc, "load_medical_credits"))
 
-			# ETI slabs & travel rates (from the annual statutory rate packs, all years)
+			# Travel allowance rates (company-scoped; ETI slabs are ir's own fixture now)
 			if setup_doc.get("load_eti_slabs"):
-				_p(56, _("Seeding ETI slabs and travel rates"))
-				seed_statutory_rate_packs()
+				_p(56, _("Seeding travel allowance rates"))
+				_ir_seed_statutory_rate_packs()
 				applied.append(get_setup_field_label(setup_doc, "load_eti_slabs"))
-
-			# SARS payroll codes
-			if setup_doc.get("load_sars_payroll_codes"):
-				_p(64, _("Seeding SARS payroll codes"))
-				seed_sars_payroll_codes()
-				applied.append(get_setup_field_label(setup_doc, "load_sars_payroll_codes"))
-
-			# Salary component classifications (payroll treatment / inclusion / statutory flags)
-			if setup_doc.get("load_salary_component_classifications"):
-				_p(72, _("Applying salary component classifications"))
-				seed_salary_component_classifications()
-				applied.append(get_setup_field_label(setup_doc, "load_salary_component_classifications"))
 
 			# Retirement fund defaults
 			if setup_doc.get("load_retirement_funds"):
@@ -3248,36 +3234,12 @@ def run_za_local_setup(setup_doc, progress_user=None):
 				setup_default_retirement_funds()
 				applied.append(get_setup_field_label(setup_doc, "load_retirement_funds"))
 
-			# Load master data
-			if setup_doc.load_business_trip_regions or setup_doc.load_seta_list or setup_doc.load_bargaining_councils:
-				_p(84, _("Loading labour master data"))
-			if setup_doc.load_business_trip_regions:
-				from za_local.utils.csv_importer import import_csv_data
-
-				stats = import_csv_data("Business Trip Region", "business_trip_region.csv")
-				print("✓ Loaded business trip regions")
-				applied.append(format_import_stats(_("Business Trip Regions"), stats))
-
-			if setup_doc.load_seta_list:
-				from za_local.utils.csv_importer import import_csv_data
-
-				stats = import_csv_data("SETA", "seta_list.csv")
-				applied.append(format_import_stats(_("SETA List"), stats))
-
-			if setup_doc.load_bargaining_councils:
-				from za_local.utils.csv_importer import import_csv_data
-
-				stats = import_csv_data("Bargaining Council", "bargaining_council_list.csv")
-				applied.append(format_import_stats(_("Bargaining Councils"), stats))
-
 			# Load Chart of Accounts
 			if setup_doc.load_chart_of_accounts and setup_doc.company:
 				_p(92, _("Loading South African chart of accounts"))
 				print("Loading South African Chart of Accounts...")
 				try:
-					from za_local.accounts.setup_chart import load_sa_chart_of_accounts
-
-					load_sa_chart_of_accounts(setup_doc.company)
+					_ir_load_sa_chart_of_accounts(setup_doc.company)
 					print("✓ Loaded Chart of Accounts")
 					applied.append(get_setup_field_label(setup_doc, "load_chart_of_accounts"))
 				except Exception as e:
@@ -3287,7 +3249,7 @@ def run_za_local_setup(setup_doc, progress_user=None):
 					warnings.append(_("Chart of Accounts could not be loaded automatically. Review Error Log."))
 
 			if setup_doc.company:
-				repair_salary_component_accounts(setup_doc.company)
+				_ir_repair_salary_component_accounts(setup_doc.company)
 
 		# Mark as completed
 		_p(98, _("Finalising"))

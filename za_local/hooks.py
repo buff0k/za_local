@@ -79,9 +79,6 @@ extend_doctype_class = {}
 # ------------------
 # Hook on document methods and events
 doc_events = {
-	"Company": {
-		"after_insert": "za_local.sa_setup.statutory_setup.configure_new_south_african_company",
-	},
     # Journal Entry events (existing)
     "Journal Entry": {
         "on_trash": "za_local.overrides.journal_entry.on_trash",
@@ -142,9 +139,12 @@ scheduler_events = {
 
 # Request Events
 # ------------------
-# Apply ZA chart patches in the current web / API worker so that the
-# setup wizard and any CoA-related flows understand the ZA template.
-before_request = ["za_local.accounts.setup_chart.apply_chart_patches_on_request"]
+# Dropped: apply_chart_patches_on_request only re-applied the 3 monkey
+# patches in sa_setup/monkey_patches.py, all confirmed dead/unused -
+# no company on this bench has ever used the za_local chart template
+# (every one uses ERPNext's own Standard/Standard with Numbers), and
+# nothing calls the hrms payroll_entry patch. See the migration history
+# for the verification.
 
 # Job Events
 # ------------------
