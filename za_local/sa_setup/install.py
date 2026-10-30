@@ -18,9 +18,6 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from frappe.utils import flt
 from frappe.utils.fixtures import import_fixtures
 
-from za_local.sa_setup.custom_fields import setup_custom_fields
-from za_local.sa_setup.monkey_patches import setup_all_monkey_patches
-from za_local.sa_setup.property_setters import apply_property_setters
 from za_local.sa_setup.statutory_setup import (
 	ensure_all_company_tax_configuration,
 	ensure_company_tax_configuration,
@@ -608,9 +605,10 @@ def sync_za_local():
 	(ir/ir/fixtures/custom_field.json, property_setter.json) as part of
 	absorbing za_local into ir - ir now independently creates/maintains
 	these on every migrate via the standard fixture mechanism, so this
-	app no longer needs to (setup_custom_fields/ensure_vat_custom_fields/
-	apply_property_setters still exist below, now unused - kept only
-	because za_local's own test suite still imports some of them).
+	app no longer needs to. setup_custom_fields/ensure_vat_custom_fields/
+	apply_property_setters still exist in their own modules, now unused
+	here - kept only because za_local's own test suite still imports some
+	of them directly.
 	"""
 	import_fixtures("za_local")
 
@@ -2923,11 +2921,6 @@ def setup_default_salary_components():
 			1,
 			update_modified=False,
 		)
-
-
-def make_property_setters():
-	"""Compatibility wrapper for the centralized property-setter implementation."""
-	apply_property_setters()
 
 
 def apply_statutory_formulas():
