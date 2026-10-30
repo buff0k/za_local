@@ -85,10 +85,8 @@ doc_events = {
         "on_cancel": "za_local.overrides.journal_entry.on_cancel"
     },
 
-    # Customer validation for SA VAT numbers
-    "Customer": {
-        "validate": "za_local.custom.customer.validate",
-    },
+    # Customer VAT number validation moved to ir.overrides.customer as part
+    # of absorbing za_local into ir.
 
 }
 
