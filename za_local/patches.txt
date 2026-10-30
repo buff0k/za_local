@@ -1,3 +1,4 @@
 #patches
-za_local.patches.v1_1.ensure_statutory_tax_configuration
-za_local.patches.v1_1.backfill_emp201_submission_keys
+# Both patches re-platformed as ir.patches.ensure_statutory_tax_configuration
+# / ir.patches.backfill_emp201_submission_keys as part of absorbing za_local
+# into ir - this app's own copies are no longer registered.

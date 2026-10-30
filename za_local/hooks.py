@@ -44,8 +44,9 @@ fixtures = [
 
 # Includes in <head>
 # ------------------
-app_include_css = "/assets/za_local/css/za_local.css"
-app_include_js = "/assets/za_local/js/za_local_feedback.js"
+# za_local.css / za_local_feedback.js moved to ir (ir_ui.css / ir_feedback.js)
+# as part of absorbing za_local into ir - ir's own VAT and setup pages were
+# calling into za_local's window.za_local.show_action_feedback global.
 
 # Include JS in doctype views
 # ------------------
@@ -77,18 +78,10 @@ extend_doctype_class = {}
 
 # Document Events
 # ------------------
-# Hook on document methods and events
-doc_events = {
-    # Journal Entry events (existing)
-    "Journal Entry": {
-        "on_trash": "za_local.overrides.journal_entry.on_trash",
-        "on_cancel": "za_local.overrides.journal_entry.on_cancel"
-    },
-
-    # Customer VAT number validation moved to ir.overrides.customer as part
-    # of absorbing za_local into ir.
-
-}
+# Journal Entry on_trash/on_cancel moved to ir.overrides.journal_entry, and
+# Customer VAT number validation moved to ir.overrides.customer, as part of
+# absorbing za_local into ir.
+doc_events = {}
 
 # Monkey Patching
 # ------------------
@@ -105,19 +98,9 @@ za_local_custom_records = get_za_local_custom_records()
 
 # Scheduled Tasks
 # ------------------
-# Automated compliance monitoring and reminders
-scheduler_events = {
-	"daily_long": [
-		"za_local.tasks.daily",
-	],
-	"weekly_long": [
-		"za_local.tasks.weekly",
-	],
-	"monthly_long": [
-		"za_local.tasks.monthly",
-		"za_local.tasks.quarterly",
-	],
-}
+# Automated compliance monitoring and reminders - moved to ir.tasks as part
+# of absorbing za_local into ir.
+scheduler_events = {}
 
 # Permissions
 # ------------------
