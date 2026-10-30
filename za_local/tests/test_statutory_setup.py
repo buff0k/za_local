@@ -1,9 +1,5 @@
-import json
-from pathlib import Path
-
 from za_local.sa_setup.custom_fields import get_custom_field_fixtures
 from za_local.tests.compat import UnitTestCase
-from za_local.utils.statutory_rates import find_rate_pack, get_rate_pack
 
 
 class TestStatutorySetup(UnitTestCase):
@@ -31,12 +27,11 @@ class TestStatutorySetup(UnitTestCase):
 		}
 		self.assertTrue(required.issubset(fixtures), required - fixtures)
 
-	def test_future_rate_pack_probe_is_non_throwing(self):
-		self.assertIsNone(find_rate_pack("2027-03-01"))
-
-	def test_future_statutory_calculation_still_fails_loudly(self):
-		with self.assertRaises(Exception):
-			get_rate_pack("2027-03-01")
+	# test_future_rate_pack_probe_is_non_throwing and
+	# test_future_statutory_calculation_still_fails_loudly moved to
+	# ir/ir/tests/test_statutory_compliance.py along with
+	# za_local.utils.statutory_rates itself, as part of absorbing za_local
+	# into ir.
 
 	# test_company_contribution_is_a_standard_app_doctype moved to
 	# ir/ir/ir_payroll/doctype/company_contribution/test_company_contribution.py
