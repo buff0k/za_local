@@ -68,205 +68,28 @@ class TestSetupWizardStabilisation(UnitTestCase):
 			],
 		)
 
-	def test_salary_component_account_defaults_cover_hrms_and_za_components(self):
-		from za_local.sa_setup.install import DEFAULT_SALARY_COMPONENT_ACCOUNT_NAMES
-
-		for component in ("Income Tax", "Basic", "Arrear", "Leave Encashment"):
-			self.assertIn(component, DEFAULT_SALARY_COMPONENT_ACCOUNT_NAMES)
-
-		for component in ("PAYE", "UIF Employee Contribution", "UIF Employer Contribution", "SDL Contribution"):
-			self.assertIn(component, DEFAULT_SALARY_COMPONENT_ACCOUNT_NAMES)
-
-	def test_salary_component_seed_derives_required_component_field_from_name(self):
-		from za_local.sa_setup.install import create_salary_component_if_not_exists
-
-		captured = {}
-
-		class FakeSalaryComponent:
-			def __init__(self, data):
-				self.data = data
-
-			def insert(self, **kwargs):
-				captured.update(self.data)
-
-		def exists(doctype, name=None, *args, **kwargs):
-			return doctype == "DocType" and name == "Salary Component"
-
-		with (
-			patch("za_local.sa_setup.install.is_hrms_installed", return_value=True),
-			patch("za_local.sa_setup.install.frappe.db.exists", side_effect=exists),
-			patch(
-				"za_local.sa_setup.install.frappe.get_doc",
-				side_effect=lambda data: FakeSalaryComponent(data),
-			),
-		):
-			create_salary_component_if_not_exists(
-				{
-					"name": "PAYE",
-					"salary_component_abbr": "PAYE",
-					"type": "Deduction",
-				}
-			)
-
-		self.assertEqual(captured["name"], "PAYE")
-		self.assertEqual(captured["salary_component"], "PAYE")
-
-	def test_salary_component_setup_skips_without_hrms(self):
-		from za_local.sa_setup.install import setup_default_salary_components
-
-		with (
-			patch("za_local.sa_setup.install.is_hrms_installed", return_value=False),
-			patch("za_local.sa_setup.install.frappe.get_doc") as get_doc,
-		):
-			setup_default_salary_components()
-
-		get_doc.assert_not_called()
+	# test_salary_component_account_defaults_cover_hrms_and_za_components,
+	# test_salary_component_seed_derives_required_component_field_from_name
+	# and test_salary_component_setup_skips_without_hrms deleted along with
+	# DEFAULT_SALARY_COMPONENT_ACCOUNT_NAMES/create_salary_component_if_not_
+	# exists/setup_default_salary_components - confirmed zero callers once
+	# the setup-wizard engine they belonged to (unreachable since
+	# ZALocalSetup.start_setup() was repointed to ir weeks earlier) was
+	# deleted, as part of absorbing za_local into ir.
 
 class TestNavigationStabilisation(UnitTestCase):
-	def test_workspace_paths_exclude_payroll_without_hrms(self):
-		from za_local.sa_setup.install import _sa_workspace_definition_paths, _za_sidebar_workspace_names
-
-		no_hrms_paths = [path.as_posix() for path in _sa_workspace_definition_paths(False)]
-		hrms_paths = [path.as_posix() for path in _sa_workspace_definition_paths(True)]
-
-		self.assertFalse(any("/sa_payroll/" in path for path in no_hrms_paths))
-		self.assertTrue(any("/sa_payroll/" in path for path in hrms_paths))
-		self.assertNotIn("SA Payroll", _za_sidebar_workspace_names(False))
-		self.assertIn("SA Payroll", _za_sidebar_workspace_names(True))
-
-	def test_sidebar_module_mapping_uses_area_modules_for_boot_permissions(self):
-		from za_local.sa_setup.install import _sidebar_module_for_workspace
-
-		self.assertEqual(_sidebar_module_for_workspace("SA Overview"), "SA Setup")
-		self.assertEqual(_sidebar_module_for_workspace("SA VAT"), "SA VAT")
-		self.assertEqual(_sidebar_module_for_workspace("SA Labour"), "SA Labour")
-		self.assertEqual(_sidebar_module_for_workspace("SA COIDA"), "SA COIDA")
-		self.assertEqual(_sidebar_module_for_workspace("SA Payroll"), "SA Payroll")
-
-	def test_desktop_layout_repair_merges_missing_child_icons(self):
-		from za_local.sa_setup.install import _repair_za_local_desktop_layouts
-
-		layout = [{"label": "SA Localisation", "icon_type": "App", "app": "za_local"}]
-		desktop_icons = [
-			frappe._dict(
-				name="SA Localisation",
-				label="SA Localisation",
-				icon_type="App",
-				app="za_local",
-				link_type="External",
-				link="/desk/sa-overview",
-				parent_icon=None,
-				hidden=0,
-				idx=0,
-			),
-			frappe._dict(
-				name="SA Overview",
-				label="SA Overview",
-				icon_type="Link",
-				app="za_local",
-				link_type="Workspace Sidebar",
-				link_to="SA Overview",
-				parent_icon="SA Localisation",
-				hidden=0,
-				idx=0,
-			),
-			frappe._dict(
-				name="SA VAT",
-				label="SA VAT",
-				icon_type="Link",
-				app="za_local",
-				link_type="Workspace Sidebar",
-				link_to="SA VAT",
-				parent_icon="SA Localisation",
-				hidden=0,
-				idx=1,
-			),
-			frappe._dict(
-				name="SA Labour",
-				label="SA Labour",
-				icon_type="Link",
-				app="za_local",
-				link_type="Workspace Sidebar",
-				link_to="SA Labour",
-				parent_icon="SA Localisation",
-				hidden=0,
-				idx=2,
-			),
-			frappe._dict(
-				name="SA COIDA",
-				label="SA COIDA",
-				icon_type="Link",
-				app="za_local",
-				link_type="Workspace Sidebar",
-				link_to="SA COIDA",
-				parent_icon="SA Localisation",
-				hidden=0,
-				idx=3,
-			),
-		]
-
-		def get_all(doctype, *args, **kwargs):
-			if doctype == "Desktop Icon":
-				return desktop_icons
-			if doctype == "Desktop Layout":
-				return [frappe._dict(name="test@example.com", layout=json.dumps(layout))]
-			return []
-
-		with (
-			patch("za_local.sa_setup.install.frappe.db.table_exists", return_value=True),
-			patch("za_local.sa_setup.install.frappe.get_all", side_effect=get_all),
-			patch("za_local.sa_setup.install.frappe.db.set_value") as set_value,
-		):
-			_repair_za_local_desktop_layouts("SA Localisation", hrms_available=False)
-
-		updated_layout = json.loads(set_value.call_args.args[3])
-		labels = [icon["label"] for icon in updated_layout]
-		self.assertEqual(labels, ["SA Localisation", "SA Overview", "SA VAT", "SA Labour", "SA COIDA"])
-		self.assertTrue(
-			all(
-				icon.get("parent_icon") == "SA Localisation"
-				for icon in updated_layout
-				if icon.get("label", "").startswith("SA ") and icon.get("label") != "SA Localisation"
-			)
-		)
-
-	def test_desktop_layout_repair_removes_payroll_without_hrms(self):
-		from za_local.sa_setup.install import _repair_za_local_desktop_layouts
-
-		layout = [
-			{"label": "SA Localisation", "icon_type": "App", "app": "za_local"},
-			{"label": "SA Payroll", "icon_type": "Link", "parent_icon": "SA Localisation"},
-		]
-		desktop_icons = [
-			frappe._dict(
-				name="SA Localisation",
-				label="SA Localisation",
-				icon_type="App",
-				app="za_local",
-				link_type="External",
-				link="/desk/sa-overview",
-				parent_icon=None,
-				hidden=0,
-				idx=0,
-			)
-		]
-
-		def get_all(doctype, *args, **kwargs):
-			if doctype == "Desktop Icon":
-				return desktop_icons
-			if doctype == "Desktop Layout":
-				return [frappe._dict(name="test@example.com", layout=json.dumps(layout))]
-			return []
-
-		with (
-			patch("za_local.sa_setup.install.frappe.db.table_exists", return_value=True),
-			patch("za_local.sa_setup.install.frappe.get_all", side_effect=get_all),
-			patch("za_local.sa_setup.install.frappe.db.set_value") as set_value,
-		):
-			_repair_za_local_desktop_layouts("SA Localisation", hrms_available=False)
-
-		updated_layout = json.loads(set_value.call_args.args[3])
-		self.assertEqual([icon["label"] for icon in updated_layout], ["SA Localisation"])
+	# test_workspace_paths_exclude_payroll_without_hrms,
+	# test_sidebar_module_mapping_uses_area_modules_for_boot_permissions,
+	# test_desktop_layout_repair_merges_missing_child_icons and
+	# test_desktop_layout_repair_removes_payroll_without_hrms deleted along
+	# with the legacy Workspace Sidebar/Desktop Icon navigation machinery
+	# they tested (_sa_workspace_definition_paths, _za_sidebar_workspace_
+	# names, _sidebar_module_for_workspace, _repair_za_local_desktop_
+	# layouts, _sanitize_workspace_navigation, etc.) - confirmed unreachable
+	# since the one thing that used to call into it (the ZA Local Setup
+	# wizard's run_za_local_setup) was repointed to ir weeks earlier. This
+	# is exactly the deprecated nav mechanism the migration plan said to
+	# delete outright, not port, once nothing real depends on it any more.
 
 	def test_app_permission_requires_system_manager_system_user(self):
 		from za_local.api import check_app_permission
@@ -292,89 +115,13 @@ class TestNavigationStabilisation(UnitTestCase):
 		):
 			self.assertFalse(check_app_permission())
 
-	def test_workspace_navigation_removes_hrms_only_and_missing_targets(self):
-		from za_local.sa_setup.install import _sanitize_workspace_navigation
-
-		data = {
-			"shortcuts": [
-				{"label": "SA Payroll", "type": "URL", "url": "/desk/sa-payroll"},
-				{"label": "SA VAT", "type": "URL", "url": "/desk/sa-vat"},
-			],
-			"quick_lists": [
-				{"label": "Payroll Correction", "document_type": "Payroll Correction"},
-				{"label": "Company", "document_type": "Company"},
-			],
-			"content": (
-				'[{"type":"paragraph","data":{"text":"payroll masters, VAT, payroll runs, and incidents.'
-				'<br><br><b>SA Payroll</b> — payroll/accounting reports."}},'
-				'{"type":"card","data":{"card_name":"Payroll configuration"}},'
-				'{"type":"card","data":{"card_name":"Organisation"}}]'
-			),
-			"links": [
-				{"type": "Card Break", "label": "Payroll configuration", "link_count": 1},
-				{
-					"type": "Link",
-					"label": "Payroll Settings",
-					"link_type": "DocType",
-					"link_to": "Payroll Settings",
-				},
-				{"type": "Card Break", "label": "Organisation", "link_count": 2},
-				{"type": "Link", "label": "Company", "link_type": "DocType", "link_to": "Company"},
-				{"type": "Link", "label": "Missing", "link_type": "DocType", "link_to": "Missing DocType"},
-			],
-		}
-
-		def exists(doctype, name=None, *args, **kwargs):
-			return doctype == "DocType" and name == "Company"
-
-		with patch("za_local.sa_setup.install.frappe.db.exists", side_effect=exists):
-			_sanitize_workspace_navigation(data, hrms_available=False)
-
-		self.assertEqual([row["label"] for row in data["shortcuts"]], ["SA VAT"])
-		self.assertEqual([row["label"] for row in data["quick_lists"]], ["Company"])
-		self.assertEqual([row["label"] for row in data["links"]], ["Organisation", "Company"])
-		self.assertIn("Organisation", data["content"])
-		self.assertNotIn("SA Payroll", data["content"])
-		self.assertNotIn("payroll masters", data["content"])
-		self.assertNotIn("Payroll configuration", data["content"])
-
-	def test_manual_setup_rejects_hrms_options_without_hrms(self):
-		from za_local.sa_setup.install import validate_za_local_setup_hrms_options
-
-		doc = frappe._dict(load_salary_components=1)
-
-		with patch("za_local.sa_setup.install.is_hrms_installed", return_value=False):
-			self.assertRaises(frappe.ValidationError, validate_za_local_setup_hrms_options, doc)
-
-	def test_manual_setup_allows_hrms_options_with_hrms(self):
-		from za_local.sa_setup.install import validate_za_local_setup_hrms_options
-
-		doc = frappe._dict(load_salary_components=1, load_tax_slabs=1)
-
-		with patch("za_local.sa_setup.install.is_hrms_installed", return_value=True):
-			validate_za_local_setup_hrms_options(doc)
-
-	def test_manual_setup_feedback_identifies_erpnext_only_mode(self):
-		from za_local.sa_setup.install import build_za_local_setup_feedback
-
-		doc = frappe._dict(
-			company="Test Company",
-			setup_status="Completed",
-			setup_completed_on="2026-04-01 10:00:00",
-		)
-
-		result = build_za_local_setup_feedback(
-			doc,
-			applied=["VAT custom fields, vendor types, print formats, and navigation"],
-			warnings=[],
-			hrms_available=False,
-		)
-
-		self.assertEqual("ZA Local Setup Complete", result["title"])
-		self.assertEqual("orange", result["indicator"])
-		self.assertFalse(result["hrms_installed"])
-		self.assertTrue(any("HRMS is not installed" in warning for warning in result["warnings"]))
-		self.assertTrue(any(row["label"] == "Setup Mode" for row in result["details"]))
+	# test_workspace_navigation_removes_hrms_only_and_missing_targets,
+	# test_manual_setup_rejects_hrms_options_without_hrms,
+	# test_manual_setup_allows_hrms_options_with_hrms and
+	# test_manual_setup_feedback_identifies_erpnext_only_mode deleted along
+	# with _sanitize_workspace_navigation/validate_za_local_setup_hrms_
+	# options/build_za_local_setup_feedback - same dead setup-wizard/nav
+	# machinery as above, confirmed zero remaining callers.
 
 
 class TestConnectionLinkStabilisation(UnitTestCase):

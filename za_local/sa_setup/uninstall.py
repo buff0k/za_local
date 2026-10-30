@@ -127,22 +127,3 @@ def cleanup_custom_doctypes():
         print("  No custom DocTypes found.")
 
     print("-" * 80)
-
-
-def preserve_data_warning():
-    """
-    Display warning about data preservation.
-    """
-    print("\n" + "!"*80)
-    print("IMPORTANT: Data Preservation")
-    print("!"*80)
-    print("\nThe uninstallation process preserves all your data:")
-    print("- Employee records with SA ID numbers")
-    print("- IRP5 Certificates")
-    print("- EMP201/EMP501 submissions")
-    print("- COIDA and VAT records")
-    print("\nTo completely remove all SA localization data:")
-    print("1. Manually delete records from each DocType")
-    print("2. Then delete the DocTypes themselves")
-    print("3. Run: bench clear-cache")
-    print("!"*80 + "\n")
