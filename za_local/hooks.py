@@ -61,9 +61,7 @@ fixtures = [
                 "SA VAT201 Return",
                 "SA EMP201 Submission",
                 "SA EMP501 Reconciliation",
-                "SA COIDA Annual Return",
                 "SA Business Trip",
-                "SA OID Claim",
                 "SA Workplace Skills Plan",
                 "SA Annual Training Report"
             ]]
@@ -86,9 +84,6 @@ app_include_js = "/assets/za_local/js/za_local_feedback.js"
 # Note: za_local's own DocTypes (e.g. EMP501 Reconciliation) load their client
 # scripts automatically from their doctype folder — they must not be listed here.
 doctype_js = {
-    "COIDA Annual Return": "public/js/coida_annual_return.js",
-    "Workplace Injury": "public/js/workplace_injury.js",
-    "OID Claim": "public/js/oid_claim.js",
     "Sales Invoice": "public/js/vat_tax_calculation.js",
     "Purchase Invoice": "public/js/vat_tax_calculation.js",
 }
