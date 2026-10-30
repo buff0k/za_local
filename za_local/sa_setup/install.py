@@ -602,15 +602,17 @@ DEFAULT_SALARY_COMPONENT_ACCOUNT_NAMES = {
 
 def sync_za_local():
 	"""
-	Unified sync: import standard fixtures, then apply centralized custom-field setup.
+	Unified sync: import standard fixtures.
 
-	Custom fields, cleanup, and custom DocType Links live in ``custom_fields.py``.
-	Property setters are applied separately from ``property_setters.py`` so there is a
-	single authoritative source for standard DocType overrides.
+	Custom field/property setter creation moved to ir's own fixtures
+	(ir/ir/fixtures/custom_field.json, property_setter.json) as part of
+	absorbing za_local into ir - ir now independently creates/maintains
+	these on every migrate via the standard fixture mechanism, so this
+	app no longer needs to (setup_custom_fields/ensure_vat_custom_fields/
+	apply_property_setters still exist below, now unused - kept only
+	because za_local's own test suite still imports some of them).
 	"""
 	import_fixtures("za_local")
-	setup_custom_fields()
-	ensure_vat_custom_fields()
 
 
 def after_install():
@@ -629,22 +631,15 @@ def _after_install():
 	Patches should only be used for one-time data migrations, not setup tasks.
 	"""
 	cleanup_invalid_doctype_links()
-	sync_za_local()  # fixtures → custom fields (cleanup + property setters) → custom records
-	make_property_setters()
-	setup_all_monkey_patches()
+	sync_za_local()  # fixtures only - custom fields/property setters are now ir's
 	setup_default_data()
 	seed_statutory_rate_packs()
 	if is_hrms_installed():
-		setup_default_salary_components()
 		ensure_eti_payroll_settings_defaults()
 		ensure_all_company_tax_configuration()
-	seed_vat_vendor_types()
 	migrate_legacy_vat_account_rows()
 	apply_statutory_formulas()
 	repair_salary_component_accounts()
-	import_master_data()
-	seed_sars_payroll_codes(overwrite=True)
-	seed_salary_component_classifications(overwrite=True)
 	migrate_irp5_legacy_source_fields()
 	cleanup_orphaned_workspace_records()
 	ensure_sa_localisation_module_def()
@@ -682,19 +677,13 @@ def _after_migrate():
 	Then: make_property_setters, monkey patches, statutory formulas, workspace/module visibility.
 	"""
 	cleanup_invalid_doctype_links()
-	sync_za_local()  # fixtures → custom fields (cleanup + property setters) → custom records
-	make_property_setters()
-	setup_all_monkey_patches()
+	sync_za_local()  # fixtures only - custom fields/property setters are now ir's
 	if is_hrms_installed():
-		setup_default_salary_components()
 		ensure_eti_payroll_settings_defaults()
 		ensure_all_company_tax_configuration()
 	seed_statutory_rate_packs()
 	repair_salary_component_accounts()
-	seed_vat_vendor_types()
 	migrate_legacy_vat_account_rows()
-	seed_sars_payroll_codes(overwrite=False)
-	seed_salary_component_classifications(overwrite=False)
 	migrate_irp5_legacy_source_fields()
 	cleanup_orphaned_workspace_records()
 	ensure_sa_localisation_module_def()
