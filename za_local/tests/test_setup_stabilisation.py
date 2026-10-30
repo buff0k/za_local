@@ -1,4 +1,3 @@
-import json
 from unittest.mock import patch
 
 import frappe
@@ -123,20 +122,9 @@ class TestNavigationStabilisation(UnitTestCase):
 	# options/build_za_local_setup_feedback - same dead setup-wizard/nav
 	# machinery as above, confirmed zero remaining callers.
 
-
-class TestConnectionLinkStabilisation(UnitTestCase):
-	def test_doctype_connection_links_hide_hrms_targets_without_hrms(self):
-		from za_local.sa_setup.custom_fields import _get_doctype_link_records
-
-		with (
-			patch("za_local.sa_setup.custom_fields.is_hrms_installed", return_value=False),
-			patch("za_local.sa_setup.custom_fields._doctype_exists_for_link", return_value=True),
-		):
-			records = _get_doctype_link_records()
-
-		parents = {record["parent"] for record in records}
-		targets = {record["link_doctype"] for record in records}
-		self.assertNotIn("Employee", parents)
-		self.assertNotIn("Payroll Entry", parents)
-		self.assertNotIn("Retirement Fund", targets)
-		self.assertIn("Workplace Skills Plan", targets)
+# TestConnectionLinkStabilisation deleted along with custom_fields.py's
+# _get_doctype_link_records/get_za_local_custom_records - "custom_records"
+# was never a real Frappe/ERPNext/HRMS hook, so this was never actually
+# consumed. Rebuilt properly (and tested as live, working migrate
+# behaviour rather than a mocked unit test) in ir.setup.doctype_connections,
+# as part of absorbing za_local into ir.

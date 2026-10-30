@@ -8,10 +8,6 @@ app_license = "mit"
 app_logo_url = "/assets/za_local/images/sa_map_icon.png"
 app_home = "/desk/sa-overview"
 
-# Import hook utility functions for conditional configuration
-# These are called at import time to generate configuration dynamically
-from za_local.sa_setup.custom_fields import get_za_local_custom_records
-
 # Add to Apps Screen (Frappe v16 desk: one App tile with map logo; workspace icons nest under it)
 # ------------------
 add_to_apps_screen = [
@@ -90,10 +86,11 @@ doc_events = {}
 
 # Custom Records (DocType Links for Bidirectional Connections)
 # ------------------
-# Creates links between za_local DocTypes and standard DocTypes
-# These appear in the "Connections" tab of documents
-# HRMS-dependent links are filtered conditionally
-za_local_custom_records = get_za_local_custom_records()
+# "custom_records" was never a real Frappe/ERPNext/HRMS hook - this was
+# never actually consumed. Rebuilt properly in
+# ir.setup.doctype_connections.ensure_doctype_connection_links/
+# ensure_employee_links, run from ir's own after_migrate, as part of
+# absorbing za_local into ir.
 
 
 # Scheduled Tasks
