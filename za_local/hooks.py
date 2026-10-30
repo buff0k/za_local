@@ -66,10 +66,10 @@ after_uninstall = "za_local.sa_setup.uninstall.after_uninstall"
 
 # Setup Wizard Integration
 # ------------------
-# Do not add a client-side ZA slide to ERPNext's first-run setup wizard.
-# ERPNext owns Company, Fiscal Year, CoA and core master creation; za_local
-# only contributes a non-blocking server-side post stage below.
-setup_wizard_stages = "za_local.sa_setup.setup_wizard.get_sa_localization_stages"
+# Moved to ir (ir.ir_setup.setup_wizard.get_sa_localization_stages) as part
+# of absorbing za_local into ir - it was still calling za_local's own stale
+# copies of load_sa_chart_of_accounts/repair_salary_component_accounts
+# instead of ir's ported ones.
 
 # DocType Class Extensions and Overrides
 # ------------------

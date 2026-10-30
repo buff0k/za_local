@@ -625,29 +625,22 @@ def _after_install():
 	Run after app installation.
 
 	Unified setup order (sync_za_local): fixtures → custom fields + property setters → custom records.
-	Then: make_property_setters, monkey patches, default data, master data, workspace/module visibility.
 
-	Note: All setup tasks are handled here, not in patches.txt.
-	Patches should only be used for one-time data migrations, not setup tasks.
+	Note: All one-time setup/backfill tasks that used to run here unconditionally
+	on every install/migrate (invalid DocType Link cleanup, legacy IRP5 field
+	migration, ETI Payroll Settings default, Accounts Settings for VAT, and the
+	now-empty legacy module/workspace/navigation housekeeping) have moved to
+	ir's own patches.txt (ir.patches.cleanup_invalid_doctype_links,
+	migrate_irp5_legacy_source_fields, ensure_eti_payroll_settings_defaults,
+	set_accounts_settings_for_za_vat) or been dropped outright as part of
+	absorbing za_local into ir - see the migration history for details.
 	"""
-	cleanup_invalid_doctype_links()
 	sync_za_local()  # fixtures only - custom fields/property setters are now ir's
-	setup_default_data()
 	# Company-scoped tax config, rate-pack/travel-rate seeding, VAT account
 	# row migration, and GL account repair all moved to ir's own
 	# after_migrate (ir.ir_setup.install.*, ir.ir_vat.setup.*) - no longer
 	# called from here.
-	if is_hrms_installed():
-		ensure_eti_payroll_settings_defaults()
 	apply_statutory_formulas()
-	migrate_irp5_legacy_source_fields()
-	cleanup_orphaned_workspace_records()
-	ensure_sa_localisation_module_def()
-	ensure_modules_visible()
-	set_accounts_settings_for_za_vat()
-	migrate_workspace_sa_localisation_to_sa_overview()
-	sync_sa_navigation()
-	ensure_sa_print_formats()
 	print("\n" + "=" * 80)
 	print("South African Localization installed successfully!")
 	print("=" * 80)
@@ -674,23 +667,18 @@ def _after_migrate():
 	Run after migrations.
 
 	Same sync order as install (sync_za_local): fixtures → custom fields + property setters → custom records.
-	Then: make_property_setters, monkey patches, statutory formulas, workspace/module visibility.
+
+	See _after_install()'s docstring for where the one-time setup/backfill
+	tasks that used to run here unconditionally (invalid DocType Link
+	cleanup, legacy IRP5 field migration, ETI Payroll Settings default,
+	Accounts Settings for VAT, legacy module/workspace/navigation
+	housekeeping) ended up.
 	"""
-	cleanup_invalid_doctype_links()
 	sync_za_local()  # fixtures only - custom fields/property setters are now ir's
 	# Company-scoped tax config, rate-pack/travel-rate seeding, VAT account
 	# row migration, and GL account repair all moved to ir's own
 	# after_migrate (ir.ir_setup.install.*, ir.ir_vat.setup.*) - no longer
 	# called from here.
-	if is_hrms_installed():
-		ensure_eti_payroll_settings_defaults()
-	migrate_irp5_legacy_source_fields()
-	cleanup_orphaned_workspace_records()
-	ensure_sa_localisation_module_def()
-	ensure_modules_visible()
-	migrate_workspace_sa_localisation_to_sa_overview()
-	sync_sa_navigation()
-	ensure_sa_print_formats()
 
 
 def ensure_eti_payroll_settings_defaults():
