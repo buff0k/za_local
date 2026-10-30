@@ -43,7 +43,9 @@ def after_uninstall():
 def remove_custom_fields():
     """
     Remove all custom fields created by za_local app.
-    Names are taken from setup/custom_fields.py (CUSTOM_FIELD_FIXTURES_JSON) so they stay in sync.
+
+    get_custom_field_fixtures() is now intentionally empty - every za_*
+    Custom Field is ir's own fixture, so this is a no-op by design.
     """
     print("Removing custom fields...")
     from za_local.sa_setup.custom_fields import get_custom_field_fixtures
