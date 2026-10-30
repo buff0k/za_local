@@ -44,21 +44,9 @@ fixtures = [
         "dt": "Print Format",
         "filters": [
             ["name", "in", [
-                "SA Sales Invoice",
-                "SA Full Tax Invoice",
-                "SA Abridged Tax Invoice",
-                "SA Quotation",
-                "SA Sales Order",
-                "SA Delivery Note",
-                "SA Purchase Invoice",
-                "SA Purchase Order",
-                "SA Payment Entry",
-                "SA Credit Note",
-                "SA Debit Note",
                 "IRP5 Employee Certificate",
                 "IRP5-it3 Certificate",
                 "SA Salary Slip",
-                "SA VAT201 Return",
                 "SA EMP201 Submission",
                 "SA EMP501 Reconciliation"
             ]]
@@ -80,10 +68,7 @@ app_include_js = "/assets/za_local/js/za_local_feedback.js"
 # Base JS files (always available)
 # Note: za_local's own DocTypes (e.g. EMP501 Reconciliation) load their client
 # scripts automatically from their doctype folder — they must not be listed here.
-doctype_js = {
-    "Sales Invoice": "public/js/vat_tax_calculation.js",
-    "Purchase Invoice": "public/js/vat_tax_calculation.js",
-}
+doctype_js = {}
 
 # Merge HRMS-dependent JS files conditionally
 doctype_js.update(get_hrms_doctype_js())
@@ -107,11 +92,7 @@ setup_wizard_stages = "za_local.sa_setup.setup_wizard.get_sa_localization_stages
 
 # DocType Class Extensions and Overrides
 # ------------------
-# Extend standard invoice controllers with South African VAT calculation.
-extend_doctype_class = {
-	"Sales Invoice": "za_local.overrides.vat_invoices.ZASalesInvoice",
-	"Purchase Invoice": "za_local.overrides.vat_invoices.ZAPurchaseInvoice",
-}
+extend_doctype_class = {}
 
 # Only register HRMS overrides if HRMS is installed.
 if is_hrms_installed():
@@ -143,11 +124,6 @@ doc_events = {
     # Customer validation for SA VAT numbers
     "Customer": {
         "validate": "za_local.custom.customer.validate",
-    },
-
-    # Keep ERPNext's zero-rated item contract aligned with za_local VAT categories
-    "Item": {
-        "validate": "za_local.sa_vat.item_sync.sync_item_zero_rated_flag",
     },
 
 }

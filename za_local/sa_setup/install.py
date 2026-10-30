@@ -25,7 +25,7 @@ from za_local.sa_setup.statutory_setup import (
 	ensure_all_company_tax_configuration,
 	ensure_company_tax_configuration,
 )
-from za_local.sa_vat.setup import (
+from ir.ir_vat.setup import (
 	ensure_vat_custom_fields,
 	migrate_legacy_vat_account_rows,
 	seed_vat_vendor_types,
@@ -653,7 +653,6 @@ def _after_install():
 	migrate_workspace_sa_localisation_to_sa_overview()
 	sync_sa_navigation()
 	ensure_sa_print_formats()
-	ensure_sa_vat_print_format_field_templates()
 	print("\n" + "=" * 80)
 	print("South African Localization installed successfully!")
 	print("=" * 80)
@@ -703,7 +702,6 @@ def _after_migrate():
 	migrate_workspace_sa_localisation_to_sa_overview()
 	sync_sa_navigation()
 	ensure_sa_print_formats()
-	ensure_sa_vat_print_format_field_templates()
 
 
 def ensure_eti_payroll_settings_defaults():
@@ -2338,7 +2336,6 @@ def before_migrate():
 	if not frappe.db:
 		return
 	try:
-		stabilize_sa_vat_doctype_metadata()
 		# Update any DocType or Report that still has module "COIDA" to "SA COIDA"
 		for doctype in ("DocType", "Report"):
 			if frappe.db.table_exists(doctype):
