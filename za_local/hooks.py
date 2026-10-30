@@ -60,10 +60,7 @@ fixtures = [
                 "SA Salary Slip",
                 "SA VAT201 Return",
                 "SA EMP201 Submission",
-                "SA EMP501 Reconciliation",
-                "SA Business Trip",
-                "SA Workplace Skills Plan",
-                "SA Annual Training Report"
+                "SA EMP501 Reconciliation"
             ]]
         ]
     },

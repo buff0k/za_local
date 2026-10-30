@@ -2,4 +2,3 @@ SA Localisation
 SA Setup
 SA VAT
 SA Payroll
-SA Labour
