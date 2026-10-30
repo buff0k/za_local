@@ -11,8 +11,6 @@ app_home = "/desk/sa-overview"
 # Import hook utility functions for conditional configuration
 # These are called at import time to generate configuration dynamically
 from za_local.sa_setup.custom_fields import get_za_local_custom_records
-from za_local.utils.hooks_utils import get_hrms_doctype_js
-from za_local.utils.hrms_detection import is_hrms_installed
 
 # Add to Apps Screen (Frappe v16 desk: one App tile with map logo; workspace icons nest under it)
 # ------------------
@@ -39,20 +37,6 @@ fixtures = [
     # Property Setters
     {"dt": "Property Setter", "filters": [["module", "in", ["SA Localisation", "SA Payroll", "SA VAT", "SA Labour", "SA COIDA", "SA Setup"]]]},
 
-    # SA-compliant Print Formats
-    {
-        "dt": "Print Format",
-        "filters": [
-            ["name", "in", [
-                "IRP5 Employee Certificate",
-                "IRP5-it3 Certificate",
-                "SA Salary Slip",
-                "SA EMP201 Submission",
-                "SA EMP501 Reconciliation"
-            ]]
-        ]
-    },
-
     # App doctype for v16 compatibility
     # Required for proper app deployment and management in Frappe v16+
     {"dt": "App", "filters": [["name", "=", "za_local"]]},
@@ -69,9 +53,6 @@ app_include_js = "/assets/za_local/js/za_local_feedback.js"
 # Note: za_local's own DocTypes (e.g. EMP501 Reconciliation) load their client
 # scripts automatically from their doctype folder — they must not be listed here.
 doctype_js = {}
-
-# Merge HRMS-dependent JS files conditionally
-doctype_js.update(get_hrms_doctype_js())
 
 # Installation
 # ------------------
@@ -93,20 +74,6 @@ setup_wizard_stages = "za_local.sa_setup.setup_wizard.get_sa_localization_stages
 # DocType Class Extensions and Overrides
 # ------------------
 extend_doctype_class = {}
-
-# Only register HRMS overrides if HRMS is installed.
-if is_hrms_installed():
-	extend_doctype_class["Salary Slip"] = [
-		"za_local.sa_payroll.fringe_benefits.salary_slip.FringeBenefitSalarySlipMixin",
-	]
-	override_doctype_class = {
-		"Salary Slip": "za_local.overrides.salary_slip.ZASalarySlip",
-		"Payroll Entry": "za_local.overrides.payroll_entry.ZAPayrollEntry",
-		"Additional Salary": "za_local.overrides.additional_salary.ZAAdditionalSalary",
-		"Leave Application": "za_local.overrides.leave_application.ZALeaveApplication",
-		"Employee Separation": "za_local.overrides.employee_separation.ZAEmployeeSeparation",
-		"Salary Structure Assignment": "za_local.overrides.salary_structure_assignment.ZASalaryStructureAssignment",
-	}
 
 # Document Events
 # ------------------
@@ -147,7 +114,6 @@ za_local_custom_records = get_za_local_custom_records()
 scheduler_events = {
 	"daily_long": [
 		"za_local.tasks.daily",
-		"za_local.sa_payroll.fringe_benefits.tasks.refresh_fringe_benefit_statuses",
 	],
 	"weekly_long": [
 		"za_local.tasks.weekly",
