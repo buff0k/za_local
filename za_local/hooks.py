@@ -5,20 +5,11 @@ app_publisher = "Cohenix"
 app_description = "Comprehensive South African localization for ERPNext covering payroll, tax, VAT, and COIDA compliance"
 app_email = "info@cohenix.com"
 app_license = "mit"
-app_logo_url = "/assets/za_local/images/sa_map_icon.png"
-app_home = "/desk/sa-overview"
 
-# Add to Apps Screen (Frappe v16 desk: one App tile with map logo; workspace icons nest under it)
-# ------------------
-add_to_apps_screen = [
-	{
-		"name": "za_local",
-		"title": "SA Localisation",
-		"logo": "/assets/za_local/images/sa_map_icon.png",
-		"route": "/desk/sa-overview",
-		"has_permission": "za_local.api.check_app_permission",
-	}
-]
+# Add to Apps Screen: removed as part of absorbing za_local into ir - the
+# SA Localisation Desk tile and the /desk/sa-overview route it pointed to
+# (the SA Overview workspace) are both retired. Every module workspace now
+# lives under ir's own Industrial Relations sidebar.
 
 # Apps
 # ------------------

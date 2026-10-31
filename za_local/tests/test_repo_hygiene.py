@@ -85,19 +85,10 @@ class TestRepositoryHygiene(unittest.TestCase):
 		self.assertFalse(artifacts, msg=f"Repository artifacts should not be tracked: {artifacts}")
 
 	def test_standard_json_docs_parse(self):
-		json_dirs = (
-			PACKAGE_ROOT / "sa_setup" / "workspace",
-			PACKAGE_ROOT / "sa_setup" / "onboarding_step",
-			PACKAGE_ROOT / "sa_setup" / "module_onboarding",
-			PACKAGE_ROOT / "sa_setup" / "form_tour",
-			PACKAGE_ROOT / "workspace_sidebar",
-			PACKAGE_ROOT / "sa_vat" / "workspace",
-			PACKAGE_ROOT / "sa_vat" / "report",
-			PACKAGE_ROOT / "sa_vat" / "print_format",
-			PACKAGE_ROOT / "sa_vat" / "print_format_field_template",
-			PACKAGE_ROOT / "sa_payroll" / "workspace",
-			PACKAGE_ROOT / "sa_payroll" / "print_format",
-		)
+		# All of this app's own standard-doc JSON directories (sa_setup/*,
+		# sa_vat/*, sa_payroll/*) moved to ir as part of absorbing za_local
+		# into ir - nothing left here to parse.
+		json_dirs = ()
 
 		for json_dir in json_dirs:
 			if not json_dir.exists():
@@ -111,70 +102,19 @@ class TestRepositoryHygiene(unittest.TestCase):
 	# ir/ir/tests/test_repo_hygiene.py - practitioner_guide moved to ir as
 	# part of absorbing za_local into ir.
 
-	def test_expected_sa_workspace_sidebars_exist(self):
-		expected = {
-			"sa_vat.json",
-			"sa_payroll.json",
-			"sa_labour.json",
-			"sa_coida.json",
-		}
-		found = {path.name for path in (PACKAGE_ROOT / "workspace_sidebar").glob("*.json")}
-		self.assertTrue(
-			expected.issubset(found),
-			msg=f"Missing expected workspace sidebar standard docs: {sorted(expected - found)}",
-		)
-		self.assertNotIn(
-			"sa_localisation.json",
-			found,
-			msg="SA Localisation is an App tile, not a Workspace Sidebar",
-		)
-		self.assertNotIn(
-			"sa_overview.json",
-			found,
-			msg="SA Overview is not a Workspace Sidebar",
-		)
-
-	def test_workspace_sidebars_use_boot_visible_area_modules(self):
-		expected_modules = {
-			"sa_vat.json": "SA VAT",
-			"sa_payroll.json": "SA Payroll",
-			"sa_labour.json": "SA Labour",
-			"sa_coida.json": "SA COIDA",
-		}
-
-		for filename, module in expected_modules.items():
-			path = PACKAGE_ROOT / "workspace_sidebar" / filename
-			with path.open() as handle:
-				data = json.load(handle)
-			self.assertEqual(data.get("app"), "za_local")
-			self.assertEqual(
-				data.get("module"),
-				module,
-				msg=f"{filename} should not be grouped under SA Localisation",
-			)
+	# test_expected_sa_workspace_sidebars_exist,
+	# test_workspace_sidebars_use_boot_visible_area_modules and
+	# test_module_sidebars_reference_module_onboarding deleted along with
+	# workspace_sidebar/*.json - the deprecated Workspace Sidebar doctype,
+	# unused since Frappe v16's real Sidebar/Sidebar Item (ir's own
+	# industrial_relations Sidebar now covers this nav), deleted outright
+	# rather than ported, as part of absorbing za_local into ir / Phase 5
+	# retirement.
 
 	# test_expected_sa_module_onboarding_exists moved to ir/ir/tests/
 	# test_repo_hygiene.py - sa_setup/module_onboarding/*.json moved to ir
 	# (distributed across ir_setup/ir_vat/ir_payroll/ir_labour/ir_coida) as
 	# part of absorbing za_local into ir.
-
-	def test_module_sidebars_reference_module_onboarding(self):
-		expected = {
-			"sa_vat.json": "SA VAT Onboarding",
-			"sa_payroll.json": "SA Payroll Onboarding",
-			"sa_labour.json": "SA Labour Onboarding",
-			"sa_coida.json": "SA COIDA Onboarding",
-		}
-
-		for filename, onboarding in expected.items():
-			path = PACKAGE_ROOT / "workspace_sidebar" / filename
-			with path.open() as handle:
-				data = json.load(handle)
-			self.assertEqual(
-				data.get("module_onboarding"),
-				onboarding,
-				msg=f"{filename} should attach {onboarding}",
-			)
 
 	# test_sa_print_formats_are_module_scoped moved to ir/ir/tests/
 	# test_repo_hygiene.py (as test_sa_print_formats_are_file_scoped) -
