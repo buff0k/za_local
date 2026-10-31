@@ -7,6 +7,7 @@ for the South African localization app.
 
 import re
 from contextlib import contextmanager
+from pathlib import Path
 
 import frappe
 from frappe.utils.fixtures import import_fixtures
@@ -167,15 +168,63 @@ def _after_migrate():
 	"""
 	sync_za_local()  # fixtures only - custom fields/property setters are now ir's
 
+# Leftover directories from modules/packages removed while absorbing za_local
+# into ir. `git rm` deletes tracked files but can't remove the resulting empty
+# directory on a checkout where an untracked, gitignored __pycache__ (created
+# whenever this checkout's Python once imported the module before removal)
+# still sits inside it - and a bare directory with no __init__.py is enough
+# for Python to resolve it as a namespace package, which breaks
+# frappe.model.sync.sync_for's module resolution for *other* apps processed
+# in the same migrate run. Every bench with history predating this removal
+# (not a fresh clone) needs this cleaned up once; doing it here means every
+# such bench - lab, staging, prod - self-heals on its next migrate, with no
+# manual step.
+_STALE_LEFTOVER_DIRS = (
+	"sa_payroll",
+	"sa_vat",
+	"sa_labour",
+	"sa_coida",
+	"accounts",
+	"custom",
+	"api",
+	"utils/integrations",
+)
+
+
+def _remove_stale_leftover_directories():
+	import shutil
+
+	app_root = Path(frappe.get_app_path("za_local"))
+	for relative in _STALE_LEFTOVER_DIRS:
+		path = app_root / relative
+		if not path.is_dir():
+			continue
+		# Only remove if it's genuinely just cruft (empty, or __pycache__ only) -
+		# never touch a directory that still holds real, unexpected content.
+		remaining = [entry for entry in path.iterdir() if entry.name != "__pycache__"]
+		if remaining:
+			frappe.log_error(
+				f"Expected {relative} to be stale leftover cruft, but it still has real "
+				f"content: {[entry.name for entry in remaining]}. Not removing.",
+				"ZA Local before_migrate",
+			)
+			continue
+		shutil.rmtree(path, ignore_errors=True)
+
+
 def before_migrate():
 	"""
 	Run before schema sync during bench migrate.
+	- Remove leftover empty/pycache-only directories from modules/packages
+	  already removed while absorbing za_local into ir (see
+	  _remove_stale_leftover_directories's docstring comment above).
 	- Rename module "COIDA" to "SA COIDA" in DB so Frappe loads za_local.sa_coida (not za_local.coida).
 	- Clear app_modules cache so module list is rebuilt from modules.txt.
 	"""
 	if not frappe.db:
 		return
 	try:
+		_remove_stale_leftover_directories()
 		# Update any DocType or Report that still has module "COIDA" to "SA COIDA"
 		for doctype in ("DocType", "Report"):
 			if frappe.db.table_exists(doctype):
